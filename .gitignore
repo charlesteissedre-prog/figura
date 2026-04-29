@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+
+# Audio artifacts
+uploads/*
+!uploads/.gitkeep
+outputs/*
+!outputs/.gitkeep
+samples/
+
+# Model checkpoints
+ckpts/
+models/*.pt
+models/*.ckpt
+
+# Vendored Amphion clone (users clone it themselves — see README)
+Amphion/
+
+# Web
+web/node_modules/
+web/dist/
+web/build/
+web/.vite/
+
+# Backups / scratch
+*.bak
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+
+# Claude Code local settings
+.claude/

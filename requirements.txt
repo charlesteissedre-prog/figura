@@ -1,0 +1,33 @@
+# Core audio analysis
+praat-parselmouth>=0.4.3
+numpy>=1.24
+scipy>=1.10
+soundfile>=0.12
+librosa>=0.10
+
+# WORLD vocoder backend
+pyworld>=0.3.4
+
+# Vevo timbre backend (Amphion) + deps needed for the inference_fm path only
+torch>=2.0
+torchaudio>=2.0
+transformers>=4.30,<5    # HuBERT content-style tokenizer; stay on 4.x for LlamaConfig
+accelerate>=0.20         # transformers model loader
+einops>=0.6              # Amphion model layers
+onnxruntime>=1.15        # Amphion vocoder path
+encodec>=0.1             # Amphion audio codec
+huggingface_hub>=0.20    # Vevo ckpt downloads
+ipython>=8.0             # imported by Amphion utilities
+json5>=0.9               # Amphion utils/util.py
+ruamel.yaml>=0.17        # Amphion utils/util.py
+six>=1.16                # Amphion utils/hparam.py
+
+# CLI and utilities
+click>=8.1
+rich>=13.0
+python-dotenv>=1.0
+
+# Web UI backend
+fastapi>=0.104
+uvicorn[standard]>=0.24
+python-multipart>=0.0.6

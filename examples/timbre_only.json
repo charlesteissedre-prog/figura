@@ -1,0 +1,8 @@
+{
+  "pitch":       {"enabled": false, "strength": 1.0},
+  "timbre":      {"enabled": true,  "strength": 1.0},
+  "energy":      {"enabled": false, "strength": 1.0},
+  "rhythm":      {"enabled": false, "strength": 1.0},
+  "breathiness": {"enabled": false, "strength": 1.0},
+  "formants":    {"enabled": true,  "strength": 1.0}
+}
