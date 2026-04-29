@@ -43,3 +43,7 @@ Thumbs.db
 
 # Claude Code local settings
 .claude/
+CLAUDE.md
+
+# Local-only docs
+docs/voice_transform_spec.docx
