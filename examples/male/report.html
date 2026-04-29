@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Voice transform report</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #faf9f4;
+  color: #2a2a28;
+  margin: 0;
+  padding: 32px 48px;
+  line-height: 1.45;
+}
+h1 { font-size: 22px; margin: 0 0 6px; }
+h2 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #999;
+  margin: 32px 0 12px;
+  font-weight: 600;
+}
+.meta { color: #999; font-size: 12px; margin-bottom: 24px; }
+.voices-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.voice-card {
+  background: #fff;
+  border: 1px solid #e5e4e0;
+  border-radius: 10px;
+  padding: 14px;
+}
+.voice-card.source { border-left: 4px solid #3b82f6; }
+.voice-card.output { border-left: 4px solid #2e9e5e; }
+.voice-card.target { border-left: 4px solid #8b5cf6; }
+.voice-card-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #999;
+  margin-bottom: 4px;
+}
+.voice-card-name { font-weight: 600; font-size: 14px; margin-bottom: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.voice-card audio { width: 100%; margin-bottom: 10px; }
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  row-gap: 3px;
+  column-gap: 12px;
+  font-size: 12px;
+}
+.stat-key { color: #999; }
+.stat-val { font-variant-numeric: tabular-nums; text-align: right; }
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.score-label { flex: 0 0 130px; font-size: 13px; }
+.score-bar {
+  flex: 1;
+  height: 10px;
+  background: #eee;
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+.score-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #e8a020, #2e9e5e);
+  border-radius: 999px;
+}
+.score-pct { flex: 0 0 48px; text-align: right; font-weight: 600; font-size: 13px; font-variant-numeric: tabular-nums; }
+.leaked { color: #d94040; }
+.overall .score-bar { height: 14px; }
+.overall .score-label { font-weight: 600; }
+.delta-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.delta-table th, .delta-table td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid #eee;
+}
+.delta-table th {
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  color: #999;
+  font-weight: 600;
+}
+.delta-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.delta-table tr.transferred td:first-child { border-left: 3px solid #2e9e5e; }
+.delta-table tr.leaked td:first-child { border-left: 3px solid #d94040; }
+.delta-table tr.unchanged td:first-child { border-left: 3px solid #ddd; }
+.warnings {
+  background: #fff4e6;
+  border: 1px solid #f0c181;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+}
+.warnings ul { margin: 6px 0 0; padding-left: 20px; }
+.provenance {
+  background: #fafaf7;
+  border: 1px solid #e5e4e0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.prov-row { display: flex; gap: 12px; align-items: center; }
+.prov-key { flex: 0 0 80px; text-transform: uppercase; font-size: 10px; font-weight: 600; letter-spacing: 0.5px; color: #999; text-align: right; }
+.prov-param { display: inline-block; border: 1px solid #e5e4e0; border-radius: 999px; padding: 2px 10px; margin-right: 4px; font-size: 11px; background: #fff; }
+</style>
+</head>
+<body>
+  <h1>Voice transform report</h1>
+  <div class="meta">2026-04-29T13:32:03+00:00</div>
+
+  <h2>Voices</h2>
+  <div class="voices-row">
+<div class="voice-card source">
+  <div class="voice-card-label">Source</div>
+  <div class="voice-card-name" title="source">source</div>
+  <audio controls src="source.wav" preload="metadata"></audio>
+  <div class="stat-grid"><div class="stat-key">F0 mean (Hz)</div><div class="stat-val">122.3</div><div class="stat-key">F0 min (Hz)</div><div class="stat-val">87.2</div><div class="stat-key">F0 max (Hz)</div><div class="stat-val">193.0</div><div class="stat-key">HNR (dB)</div><div class="stat-val">10.5</div><div class="stat-key">F1 (Hz)</div><div class="stat-val">815.0</div><div class="stat-key">F2 (Hz)</div><div class="stat-val">1977.0</div><div class="stat-key">F3 (Hz)</div><div class="stat-val">3015.0</div><div class="stat-key">Jitter (%)</div><div class="stat-val">3.39</div><div class="stat-key">Shimmer (%)</div><div class="stat-val">9.25</div><div class="stat-key">CPP (dB)</div><div class="stat-val">—</div><div class="stat-key">Rate (syl/s)</div><div class="stat-val">—</div></div>
+</div>
+
+<div class="voice-card output">
+  <div class="voice-card-label">Output</div>
+  <div class="voice-card-name" title="output">output</div>
+  <audio controls src="output.wav" preload="metadata"></audio>
+  <div class="stat-grid"><div class="stat-key">F0 mean (Hz)</div><div class="stat-val">125.9</div><div class="stat-key">F0 min (Hz)</div><div class="stat-val">88.9</div><div class="stat-key">F0 max (Hz)</div><div class="stat-val">196.1</div><div class="stat-key">HNR (dB)</div><div class="stat-val">8.10</div><div class="stat-key">F1 (Hz)</div><div class="stat-val">580.0</div><div class="stat-key">F2 (Hz)</div><div class="stat-val">1641.0</div><div class="stat-key">F3 (Hz)</div><div class="stat-val">2751.0</div><div class="stat-key">Jitter (%)</div><div class="stat-val">2.58</div><div class="stat-key">Shimmer (%)</div><div class="stat-val">10.1</div><div class="stat-key">CPP (dB)</div><div class="stat-val">—</div><div class="stat-key">Rate (syl/s)</div><div class="stat-val">—</div></div>
+</div>
+
+<div class="voice-card target">
+  <div class="voice-card-label">Target</div>
+  <div class="voice-card-name" title="target">target</div>
+  <audio controls src="target.mp3" preload="metadata"></audio>
+  <div class="stat-grid"><div class="stat-key">F0 mean (Hz)</div><div class="stat-val">124.8</div><div class="stat-key">F0 min (Hz)</div><div class="stat-val">97.8</div><div class="stat-key">F0 max (Hz)</div><div class="stat-val">162.6</div><div class="stat-key">HNR (dB)</div><div class="stat-val">8.00</div><div class="stat-key">F1 (Hz)</div><div class="stat-val">573.0</div><div class="stat-key">F2 (Hz)</div><div class="stat-val">1754.0</div><div class="stat-key">F3 (Hz)</div><div class="stat-val">2788.0</div><div class="stat-key">Jitter (%)</div><div class="stat-val">2.85</div><div class="stat-key">Shimmer (%)</div><div class="stat-val">11.7</div><div class="stat-key">CPP (dB)</div><div class="stat-val">—</div><div class="stat-key">Rate (syl/s)</div><div class="stat-val">—</div></div>
+</div>
+</div>
+
+  <h2>Similarity</h2>
+  
+<div class="score-row overall">
+  <div class="score-label ">Overall</div>
+  <div class="score-bar"><div class="score-bar-fill" style="width: 60.0%"></div></div>
+  <div class="score-pct ">60%</div>
+</div>
+
+<div class="score-row">
+  <div class="score-label leaked">pitch ⚠ leaked</div>
+  <div class="score-bar"><div class="score-bar-fill" style="width: 24.0%"></div></div>
+  <div class="score-pct leaked">24%</div>
+</div>
+
+<div class="score-row">
+  <div class="score-label ">timbre</div>
+  <div class="score-bar"><div class="score-bar-fill" style="width: 65.0%"></div></div>
+  <div class="score-pct ">65%</div>
+</div>
+
+<div class="score-row">
+  <div class="score-label ">energy</div>
+  <div class="score-bar"><div class="score-bar-fill" style="width: 35.0%"></div></div>
+  <div class="score-pct ">35%</div>
+</div>
+
+<div class="score-row">
+  <div class="score-label leaked">breathiness ⚠ leaked</div>
+  <div class="score-bar"><div class="score-bar-fill" style="width: 100.0%"></div></div>
+  <div class="score-pct leaked">100%</div>
+</div>
+
+<div class="score-row">
+  <div class="score-label leaked">formants ⚠ leaked</div>
+  <div class="score-bar"><div class="score-bar-fill" style="width: 77.0%"></div></div>
+  <div class="score-pct leaked">77%</div>
+</div>
+
+
+  
+<h2>Acoustic deltas</h2>
+<table class="delta-table">
+  <thead>
+    <tr>
+      <th>Field</th><th>Source</th><th>Output</th><th>Target</th>
+      <th>Δ src→out</th><th>Δ out↔tgt</th><th>Status</th>
+    </tr>
+  </thead>
+  <tbody><tr class='unchanged'><td>F0 mean (Hz)</td><td class='num'>122.3</td><td class='num'>125.9</td><td class='num'>124.8</td><td class='num'>+3.6</td><td class='num'>+1.1</td><td>unchanged</td></tr><tr class='unchanged'><td>F0 min (Hz)</td><td class='num'>87.2</td><td class='num'>88.9</td><td class='num'>97.8</td><td class='num'>+1.7</td><td class='num'>-8.9</td><td>unchanged</td></tr><tr class='unchanged'><td>F0 max (Hz)</td><td class='num'>193.0</td><td class='num'>196.1</td><td class='num'>162.6</td><td class='num'>+3.1</td><td class='num'>+33.5</td><td>unchanged</td></tr><tr class='transferred'><td>HNR (dB)</td><td class='num'>10.5</td><td class='num'>8.10</td><td class='num'>8.00</td><td class='num'>-2.4</td><td class='num'>+0.1</td><td>transferred</td></tr><tr class='leaked'><td>F1 (Hz)</td><td class='num'>815.0</td><td class='num'>580.0</td><td class='num'>573.0</td><td class='num'>-235.0</td><td class='num'>+7.0</td><td>leaked</td></tr><tr class='leaked'><td>F2 (Hz)</td><td class='num'>1977.0</td><td class='num'>1641.0</td><td class='num'>1754.0</td><td class='num'>-336.0</td><td class='num'>-113.0</td><td>leaked</td></tr><tr class='unchanged'><td>F3 (Hz)</td><td class='num'>3015.0</td><td class='num'>2751.0</td><td class='num'>2788.0</td><td class='num'>-264.0</td><td class='num'>-37.0</td><td>unchanged</td></tr><tr class='leaked'><td>Jitter (%)</td><td class='num'>3.39</td><td class='num'>2.58</td><td class='num'>2.85</td><td class='num'>-0.8</td><td class='num'>-0.3</td><td>leaked</td></tr><tr class='unchanged'><td>Shimmer (%)</td><td class='num'>9.25</td><td class='num'>10.1</td><td class='num'>11.7</td><td class='num'>+0.8</td><td class='num'>-1.6</td><td>unchanged</td></tr><tr class='unchanged'><td>CPP (dB)</td><td class='num'>—</td><td class='num'>—</td><td class='num'>—</td><td class='num'>—</td><td class='num'>—</td><td>unchanged</td></tr></tbody>
+</table>
+
+  
+<h2>Perceptual deltas</h2>
+<table class="delta-table">
+  <thead>
+    <tr>
+      <th>Field</th><th>Source</th><th>Output</th><th>Target</th>
+      <th>Δ src→out</th><th>Δ out↔tgt</th><th>Status</th>
+    </tr>
+  </thead>
+  <tbody><tr class='unchanged'><td>Brightness</td><td class='num'>5.00</td><td class='num'>14.0</td><td class='num'>1.00</td><td class='num'>+9.0</td><td class='num'>+13.0</td><td>unchanged</td></tr><tr class='leaked'><td>Breathiness</td><td class='num'>58.0</td><td class='num'>68.0</td><td class='num'>68.0</td><td class='num'>+10.0</td><td class='num'>+0.0</td><td>leaked</td></tr><tr class='unchanged'><td>Nasality</td><td class='num'>—</td><td class='num'>—</td><td class='num'>—</td><td class='num'>—</td><td class='num'>—</td><td>unchanged</td></tr><tr class='unchanged'><td>Roughness</td><td class='num'>100.0</td><td class='num'>100.0</td><td class='num'>100.0</td><td class='num'>+0.0</td><td class='num'>+0.0</td><td>unchanged</td></tr><tr class='unchanged'><td>Tension</td><td class='num'>35.0</td><td class='num'>36.0</td><td class='num'>22.0</td><td class='num'>+1.0</td><td class='num'>+14.0</td><td>unchanged</td></tr></tbody>
+</table>
+
+
+  <h2>Leakage warnings</h2><div class="warnings"><ul><li>f1_mean_hz changed by 29% on a disabled parameter</li><li>f2_mean_hz changed by 17% on a disabled parameter</li><li>jitter_pct changed by 24% on a disabled parameter</li><li>breathiness changed by 17% on a disabled parameter</li></ul></div>
+
+  <h2>Provenance</h2>
+  
+<div class="provenance">
+  <div class="prov-row"><div class="prov-key">Backend</div><div>vevo</div></div>
+  <div class="prov-row"><div class="prov-key">Params</div><div><span class="prov-param">timbre 100%</span></div></div>
+  <div class="prov-row"><div class="prov-key">Created</div><div>2026-04-29T13:32:03+00:00</div></div>
+</div>
+
+</body>
+</html>

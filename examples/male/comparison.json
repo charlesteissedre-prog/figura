@@ -1,0 +1,284 @@
+{
+  "source_profile": {
+    "name": "source",
+    "filepath": "C:\\Odia\\dev_test\\figura\\uploads\\b1e03115e68e.wav",
+    "duration_s": 9.35,
+    "sample_rate": 44100,
+    "f0_mean_hz": 122.3,
+    "f0_min_hz": 87.2,
+    "f0_max_hz": 193.0,
+    "hnr_db": 10.5,
+    "f1_mean_hz": 815.0,
+    "f2_mean_hz": 1977.0,
+    "f3_mean_hz": 3015.0,
+    "jitter_pct": 3.39,
+    "shimmer_pct": 9.25,
+    "cpp_db": null,
+    "speech_rate_syl_per_s": null,
+    "brightness": 5.0,
+    "breathiness": 58.0,
+    "nasality": null,
+    "roughness": 100.0,
+    "tension": 35.0,
+    "tags": [],
+    "notes": "",
+    "gender": null
+  },
+  "output_profile": {
+    "name": "output",
+    "filepath": "C:\\Odia\\dev_test\\figura\\uploads\\e5d7b5cb99b1.wav",
+    "duration_s": 9.32,
+    "sample_rate": 24000,
+    "f0_mean_hz": 125.9,
+    "f0_min_hz": 88.9,
+    "f0_max_hz": 196.1,
+    "hnr_db": 8.1,
+    "f1_mean_hz": 580.0,
+    "f2_mean_hz": 1641.0,
+    "f3_mean_hz": 2751.0,
+    "jitter_pct": 2.58,
+    "shimmer_pct": 10.1,
+    "cpp_db": null,
+    "speech_rate_syl_per_s": null,
+    "brightness": 14.0,
+    "breathiness": 68.0,
+    "nasality": null,
+    "roughness": 100.0,
+    "tension": 36.0,
+    "tags": [],
+    "notes": "",
+    "gender": null
+  },
+  "target_profile": {
+    "name": "target",
+    "filepath": "C:\\Odia\\dev_test\\figura\\uploads\\dfb4bd14aa9d.mp3",
+    "duration_s": 3.72,
+    "sample_rate": 44100,
+    "f0_mean_hz": 124.8,
+    "f0_min_hz": 97.8,
+    "f0_max_hz": 162.6,
+    "hnr_db": 8.0,
+    "f1_mean_hz": 573.0,
+    "f2_mean_hz": 1754.0,
+    "f3_mean_hz": 2788.0,
+    "jitter_pct": 2.85,
+    "shimmer_pct": 11.66,
+    "cpp_db": null,
+    "speech_rate_syl_per_s": null,
+    "brightness": 1.0,
+    "breathiness": 68.0,
+    "nasality": null,
+    "roughness": 100.0,
+    "tension": 22.0,
+    "tags": [],
+    "notes": "",
+    "gender": null
+  },
+  "comparison": {
+    "overall_score_pct": 60.0,
+    "param_scores": [
+      {
+        "param": "pitch",
+        "score_pct": 24.0,
+        "leaked": true
+      },
+      {
+        "param": "timbre",
+        "score_pct": 65.0,
+        "leaked": false
+      },
+      {
+        "param": "energy",
+        "score_pct": 35.0,
+        "leaked": false
+      },
+      {
+        "param": "breathiness",
+        "score_pct": 100.0,
+        "leaked": true
+      },
+      {
+        "param": "formants",
+        "score_pct": 77.0,
+        "leaked": true
+      }
+    ],
+    "acoustic_deltas": [
+      {
+        "field": "f0_mean_hz",
+        "src_val": 122.3,
+        "out_val": 125.9,
+        "tgt_val": 124.8,
+        "delta_src_out": 3.6,
+        "delta_out_tgt": 1.1,
+        "status": "unchanged"
+      },
+      {
+        "field": "f0_min_hz",
+        "src_val": 87.2,
+        "out_val": 88.9,
+        "tgt_val": 97.8,
+        "delta_src_out": 1.7,
+        "delta_out_tgt": -8.9,
+        "status": "unchanged"
+      },
+      {
+        "field": "f0_max_hz",
+        "src_val": 193.0,
+        "out_val": 196.1,
+        "tgt_val": 162.6,
+        "delta_src_out": 3.1,
+        "delta_out_tgt": 33.5,
+        "status": "unchanged"
+      },
+      {
+        "field": "hnr_db",
+        "src_val": 10.5,
+        "out_val": 8.1,
+        "tgt_val": 8.0,
+        "delta_src_out": -2.4,
+        "delta_out_tgt": 0.1,
+        "status": "transferred"
+      },
+      {
+        "field": "f1_mean_hz",
+        "src_val": 815.0,
+        "out_val": 580.0,
+        "tgt_val": 573.0,
+        "delta_src_out": -235.0,
+        "delta_out_tgt": 7.0,
+        "status": "leaked"
+      },
+      {
+        "field": "f2_mean_hz",
+        "src_val": 1977.0,
+        "out_val": 1641.0,
+        "tgt_val": 1754.0,
+        "delta_src_out": -336.0,
+        "delta_out_tgt": -113.0,
+        "status": "leaked"
+      },
+      {
+        "field": "f3_mean_hz",
+        "src_val": 3015.0,
+        "out_val": 2751.0,
+        "tgt_val": 2788.0,
+        "delta_src_out": -264.0,
+        "delta_out_tgt": -37.0,
+        "status": "unchanged"
+      },
+      {
+        "field": "jitter_pct",
+        "src_val": 3.39,
+        "out_val": 2.58,
+        "tgt_val": 2.85,
+        "delta_src_out": -0.81,
+        "delta_out_tgt": -0.27,
+        "status": "leaked"
+      },
+      {
+        "field": "shimmer_pct",
+        "src_val": 9.25,
+        "out_val": 10.1,
+        "tgt_val": 11.66,
+        "delta_src_out": 0.85,
+        "delta_out_tgt": -1.56,
+        "status": "unchanged"
+      },
+      {
+        "field": "cpp_db",
+        "src_val": null,
+        "out_val": null,
+        "tgt_val": null,
+        "delta_src_out": null,
+        "delta_out_tgt": null,
+        "status": "unchanged"
+      }
+    ],
+    "dim_deltas": [
+      {
+        "field": "brightness",
+        "src_val": 5.0,
+        "out_val": 14.0,
+        "tgt_val": 1.0,
+        "delta_src_out": 9.0,
+        "delta_out_tgt": 13.0,
+        "status": "unchanged"
+      },
+      {
+        "field": "breathiness",
+        "src_val": 58.0,
+        "out_val": 68.0,
+        "tgt_val": 68.0,
+        "delta_src_out": 10.0,
+        "delta_out_tgt": 0.0,
+        "status": "leaked"
+      },
+      {
+        "field": "nasality",
+        "src_val": null,
+        "out_val": null,
+        "tgt_val": null,
+        "delta_src_out": null,
+        "delta_out_tgt": null,
+        "status": "unchanged"
+      },
+      {
+        "field": "roughness",
+        "src_val": 100.0,
+        "out_val": 100.0,
+        "tgt_val": 100.0,
+        "delta_src_out": 0.0,
+        "delta_out_tgt": 0.0,
+        "status": "unchanged"
+      },
+      {
+        "field": "tension",
+        "src_val": 35.0,
+        "out_val": 36.0,
+        "tgt_val": 22.0,
+        "delta_src_out": 1.0,
+        "delta_out_tgt": 14.0,
+        "status": "unchanged"
+      }
+    ],
+    "tags_kept": [],
+    "tags_gained": [],
+    "tags_lost": [],
+    "tags_tgt_missing": [],
+    "leakage_summary": [
+      "f1_mean_hz changed by 29% on a disabled parameter",
+      "f2_mean_hz changed by 17% on a disabled parameter",
+      "jitter_pct changed by 24% on a disabled parameter",
+      "breathiness changed by 17% on a disabled parameter"
+    ]
+  },
+  "config": {
+    "pitch": {
+      "enabled": false,
+      "strength": 1.0
+    },
+    "timbre": {
+      "enabled": true,
+      "strength": 1.0
+    },
+    "energy": {
+      "enabled": false,
+      "strength": 1.0
+    },
+    "rhythm": {
+      "enabled": false,
+      "strength": 1.0
+    },
+    "breathiness": {
+      "enabled": false,
+      "strength": 1.0
+    },
+    "formants": {
+      "enabled": false,
+      "strength": 1.0
+    }
+  },
+  "backend": "vevo",
+  "created_at": "2026-04-29T13:32:03+00:00"
+}
