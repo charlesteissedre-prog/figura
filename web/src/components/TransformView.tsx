@@ -435,7 +435,7 @@ export default function TransformView({ prefill, onPrefillConsumed, onTransformD
         {/* Parameters */}
         <div>
           <div className="section-title">Parameters</div>
-          <ParamPanel config={config} onChange={setConfig} />
+          <ParamPanel config={config} onChange={setConfig} backend={backend} />
         </div>
 
         {/* Controls */}
@@ -445,6 +445,7 @@ export default function TransformView({ prefill, onPrefillConsumed, onTransformD
             <select value={backend} onChange={(e) => setBackend(e.target.value as Backend)}>
               <option value="auto">Auto (Vevo, WORLD fallback)</option>
               <option value="vevo">Vevo (timbre)</option>
+              <option value="vevo2">Vevo 2 (timbre)</option>
               <option value="world">WORLD</option>
             </select>
           </label>

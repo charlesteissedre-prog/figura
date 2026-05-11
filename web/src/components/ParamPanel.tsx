@@ -1,10 +1,11 @@
-import type { TransformConfig, ParamConfig } from "../types";
+import type { TransformConfig, ParamConfig, Backend } from "../types";
 
 type ParamKey = keyof TransformConfig;
 
 interface Props {
   config: TransformConfig;
   onChange: (config: TransformConfig) => void;
+  backend?: Backend;
 }
 
 const PARAMS: { key: ParamKey; label: string; desc: string }[] = [
@@ -16,36 +17,81 @@ const PARAMS: { key: ParamKey; label: string; desc: string }[] = [
   { key: "formants", label: "Formants (F1-F3)", desc: "Resonance frequencies only" },
 ];
 
-export default function ParamPanel({ config, onChange }: Props) {
+type ParamMode = "normal" | "binary" | "disabled" | "hidden";
+
+interface ParamRule {
+  mode?: ParamMode;
+  label?: string;
+  desc?: string;
+  coupledWith?: ParamKey;
+}
+
+const BACKEND_RULES: Partial<Record<Backend, Partial<Record<ParamKey, ParamRule>>>> = {
+  vevo2: {
+    pitch: { mode: "binary", desc: "Shift source into target's pitch range (on/off)" },
+    timbre: {
+      label: "Voice transfer",
+      desc: "Blend converted output with raw source (100% = full conversion)",
+      coupledWith: "formants",
+    },
+    formants: { mode: "hidden" },
+    rhythm: { mode: "disabled", desc: "Not supported on Vevo 2" },
+    breathiness: { mode: "disabled", desc: "Not supported on Vevo 2" },
+  },
+};
+
+export default function ParamPanel({ config, onChange, backend = "auto" }: Props) {
+  const rules = BACKEND_RULES[backend] ?? {};
+
   const update = (name: ParamKey, patch: Partial<ParamConfig>) => {
-    onChange({ ...config, [name]: { ...config[name], ...patch } });
+    const next = { ...config, [name]: { ...config[name], ...patch } };
+    const couple = rules[name]?.coupledWith;
+    if (couple) next[couple] = { ...next[couple], ...patch };
+    onChange(next);
   };
 
   return (
     <div className="param-grid">
       {PARAMS.map(({ key, label, desc }) => {
+        const rule = rules[key] ?? {};
+        if (rule.mode === "hidden") return null;
+
         const pc = config[key];
+        const isDisabled = rule.mode === "disabled";
+        const isBinary = rule.mode === "binary";
+        const effectiveLabel = rule.label ?? label;
+        const effectiveDesc = rule.desc ?? desc;
+
         return (
-          <div key={key} className={`param-card ${pc.enabled ? "" : "disabled"}`}>
+          <div key={key} className={`param-card ${pc.enabled && !isDisabled ? "" : "disabled"}`}>
             <div className="param-card-header">
-              <span className="param-card-name">{label}</span>
+              <span className="param-card-name">{effectiveLabel}</span>
               <button
-                className={`param-card-toggle ${pc.enabled ? "on" : ""}`}
-                onClick={() => update(key, { enabled: !pc.enabled })}
+                className={`param-card-toggle ${pc.enabled && !isDisabled ? "on" : ""}`}
+                disabled={isDisabled}
+                onClick={() => !isDisabled && update(key, { enabled: !pc.enabled })}
               />
             </div>
-            <div className="param-card-desc">{desc}</div>
+            <div className="param-card-desc">{effectiveDesc}</div>
             <div className="param-card-slider">
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.01}
-                value={pc.strength}
-                disabled={!pc.enabled}
-                onChange={(e) => update(key, { strength: parseFloat(e.target.value) })}
-              />
-              <span className="param-card-pct">{Math.round(pc.strength * 100)}%</span>
+              {isBinary ? (
+                <span className="param-card-pct" style={{ fontStyle: "italic", opacity: 0.7 }}>
+                  {pc.enabled ? "ON" : "OFF"}
+                </span>
+              ) : (
+                <>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={pc.strength}
+                    disabled={!pc.enabled || isDisabled}
+                    onChange={(e) => update(key, { strength: parseFloat(e.target.value) })}
+                  />
+                  <span className="param-card-pct">{Math.round(pc.strength * 100)}%</span>
+                </>
+              )}
             </div>
           </div>
         );

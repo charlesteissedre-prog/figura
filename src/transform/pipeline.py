@@ -1,13 +1,17 @@
 """
 Voice transform pipeline.
 
-Two backends:
+Three backends:
 - "world"      — pyworld spectral-envelope pipeline, pure CPU, fast.
-- "vevo"       — Amphion Vevo neural VC, timbre-only path (inference_fm).
+- "vevo"       — Amphion Vevo (v1) neural VC, timbre-only path (inference_fm).
                  Needs the checkpoints that HuggingFace downloads on first use
                  (tokenizer/vq8192, acoustic_modeling/Vq8192ToMels, Vocoder).
                  The heavier Vq32 / AR components are NOT loaded — that was the
                  Vevo "style"/"full" path, which we don't support here.
+- "vevo2"      — Amphion Vevo2 neural VC, FM-only path (Vevo2InferencePipeline).
+                 Larger checkpoints (~11 GB from RMSnow/Vevo2) but the FM model
+                 alone runs in ~7 GB RAM on a 16 GB rig after the pagefile fix.
+                 AR/prosody components are not downloaded.
 """
 from dataclasses import dataclass, field
 import contextlib
@@ -49,10 +53,11 @@ def run(
     output_path: str,
     backend: str = "auto",
 ) -> str:
-    """Run the voice transform. backend in {"auto", "vevo", "world"}.
+    """Run the voice transform. backend in {"auto", "vevo", "vevo2", "world"}.
 
-    "auto" tries Vevo timbre first, falls back to WORLD if Vevo isn't available
-    or errors out (e.g. OOM on constrained machines).
+    "auto" tries Vevo (v1) timbre first, falls back to WORLD if Vevo isn't
+    available or errors out (e.g. OOM on constrained machines). Vevo2 is
+    opt-in only — it's heavier and not yet validated as strictly better than v1.
     """
     if backend == "auto":
         if _vevo_available():
@@ -64,6 +69,8 @@ def run(
 
     if backend == "vevo":
         return _run_vevo(source_path, target_path, config, output_path)
+    if backend == "vevo2":
+        return _run_vevo2(source_path, target_path, config, output_path)
     return _run_world(source_path, target_path, config, output_path)
 
 
@@ -269,6 +276,145 @@ def _run_vevo(source_path, target_path, config: TransformConfig, output_path):
     if config.breathiness.enabled:
         audio_out = _transfer_breathiness(audio_out, source_path, target_path,
                                           config.breathiness.strength, vevo_sr)
+
+    sf.write(output_path, audio_out, vevo_sr)
+    return output_path
+
+
+# ---------------------------------------------------------------------------
+# Vevo2 backend (Amphion — FM-only path, Vevo2InferencePipeline)
+# ---------------------------------------------------------------------------
+
+_vevo2_pipeline = None
+
+
+def _vevo2_available() -> bool:
+    """True if the Amphion tree and Vevo2InferencePipeline are importable."""
+    try:
+        import torch  # noqa
+        import torchaudio  # noqa
+        import sys
+        amphion_root = _amphion_root()
+        if not amphion_root.exists():
+            return False
+        if not (amphion_root / "models" / "svc" / "vevo2").exists():
+            return False
+        if str(amphion_root) not in sys.path:
+            sys.path.insert(0, str(amphion_root))
+        from models.svc.vevo2.vevo2_utils import Vevo2InferencePipeline  # noqa
+        return True
+    except Exception:
+        return False
+
+
+def _get_vevo2_pipeline():
+    """Lazy-load the FM-only Vevo2 pipeline. No AR / prosody tokenizer
+    — those are needed for TTS / style-conversion modes which we don't expose."""
+    global _vevo2_pipeline
+    if _vevo2_pipeline is not None:
+        return _vevo2_pipeline
+
+    import sys
+    import torch
+    from pathlib import Path
+    from huggingface_hub import snapshot_download
+
+    amphion_root = _amphion_root()
+    if str(amphion_root) not in sys.path:
+        sys.path.insert(0, str(amphion_root))
+    from models.svc.vevo2.vevo2_utils import Vevo2InferencePipeline
+
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    ckpt_dir = str(Path(__file__).resolve().parent.parent.parent / "ckpts" / "Vevo2")
+
+    # FM-only needs three pieces from RMSnow/Vevo2; the AR model and prosody
+    # tokenizer (~5 GB) are intentionally skipped via allow_patterns.
+    local_dir = snapshot_download(
+        repo_id="RMSnow/Vevo2", repo_type="model",
+        local_dir=ckpt_dir,
+        allow_patterns=[
+            "tokenizer/contentstyle_fvq16384_12.5hz/*",
+            "acoustic_modeling/fm_emilia101k_singnet7k_repa/*",
+            "vocoder/*",
+        ],
+        resume_download=True,
+    )
+
+    content_style_tokenizer_ckpt_path = os.path.join(
+        local_dir, "tokenizer/contentstyle_fvq16384_12.5hz"
+    )
+    fmt_cfg_path = os.path.join(
+        local_dir, "acoustic_modeling/fm_emilia101k_singnet7k_repa/config.json"
+    )
+    fmt_ckpt_path = os.path.join(local_dir, "acoustic_modeling/fm_emilia101k_singnet7k_repa")
+    vocoder_cfg_path = os.path.join(local_dir, "vocoder/config.json")
+    vocoder_ckpt_path = os.path.join(local_dir, "vocoder")
+
+    def _vram(tag):
+        if device.type == "cuda":
+            used = torch.cuda.memory_allocated() / 1e9
+            reserved = torch.cuda.memory_reserved() / 1e9
+            print(f"[vevo2] VRAM after {tag}: {used:.2f} GB used / {reserved:.2f} GB reserved")
+
+    _vram("pre-init")
+    with _in_amphion_cwd():
+        _vevo2_pipeline = Vevo2InferencePipeline(
+            content_style_tokenizer_ckpt_path=content_style_tokenizer_ckpt_path,
+            fmt_cfg_path=fmt_cfg_path,
+            fmt_ckpt_path=fmt_ckpt_path,
+            vocoder_cfg_path=vocoder_cfg_path,
+            vocoder_ckpt_path=vocoder_ckpt_path,
+            device=device,
+        )
+    _vram("pipeline-built")
+    return _vevo2_pipeline
+
+
+def _run_vevo2(source_path, target_path, config: TransformConfig, output_path):
+    """Vevo2 timbre transfer via Vevo2InferencePipeline.inference_fm.
+
+    Minimal post-processing: only linear operations (source blend, energy gain)
+    touch the audio. PSOLA and the WORLD breathiness round-trip are skipped
+    because Vevo2's output quality is high enough that any vocoder re-synthesis
+    on top is audible as artefacts.
+
+    Slider mapping: `pitch.enabled` toggles Vevo2's native `use_pitch_shift`
+    (on = shift source into target's pitch range, off = keep source's range).
+    Strength is ignored — v2's pitch control is binary, not continuous.
+    `breathiness` slider is a no-op (would require re-introducing the WORLD
+    round-trip, which is what made the output artefact-y in the first place)."""
+    import soundfile as sf
+    import torch
+
+    pipe = _get_vevo2_pipeline()
+
+    if torch.cuda.is_available():
+        used = torch.cuda.memory_allocated() / 1e9
+        print(f"[vevo2] VRAM pre-inference: {used:.2f} GB used")
+
+    with _in_amphion_cwd():
+        gen_audio = pipe.inference_fm(
+            src_wav_path=source_path,
+            timbre_ref_wav_path=target_path,
+            use_pitch_shift=config.pitch.enabled,
+            flow_matching_steps=32,
+        )
+
+    audio_out = gen_audio.cpu().numpy().squeeze().astype(np.float32)
+    vevo_sr = 24000
+
+    blend = max(
+        config.timbre.strength if config.timbre.enabled else 0,
+        config.formants.strength if config.formants.enabled else 0,
+    )
+    if blend < 1.0:
+        src_audio, _ = _load_audio(source_path)
+        src_resampled = _resample_1d(src_audio, len(audio_out))
+        audio_out = blend * audio_out + (1 - blend) * src_resampled.astype(np.float32)
+
+    if config.energy.enabled:
+        audio_out = _transfer_energy(audio_out, source_path, target_path,
+                                     config.energy.strength, vevo_sr)
 
     sf.write(output_path, audio_out, vevo_sr)
     return output_path

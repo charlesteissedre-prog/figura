@@ -182,7 +182,7 @@ def main():
     p_transform.add_argument("--output", default="output.wav")
     p_transform.add_argument("--disable", nargs="*", choices=PARAMS)
     p_transform.add_argument("--strength", nargs="*", metavar="PARAM=VALUE")
-    p_transform.add_argument("--backend", choices=["auto", "vevo", "world"], default="auto")
+    p_transform.add_argument("--backend", choices=["auto", "vevo", "vevo2", "world"], default="auto")
     p_transform.add_argument("--compare", action="store_true")
     p_transform.add_argument("--config", help="Load run config from JSON")
     p_transform.add_argument("--save-config", help="Save run config to JSON")

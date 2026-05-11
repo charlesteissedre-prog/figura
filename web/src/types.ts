@@ -3,7 +3,7 @@ export interface ParamConfig {
   strength: number;
 }
 
-export type Backend = "auto" | "vevo" | "world";
+export type Backend = "auto" | "vevo" | "vevo2" | "world";
 
 export interface TransformConfig {
   pitch: ParamConfig;

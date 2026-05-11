@@ -75,7 +75,7 @@ class TransformRequest(BaseModel):
     source_id: str
     target_id: str
     config: TransformConfigSchema = TransformConfigSchema()
-    backend: str = "auto"  # "auto" | "vevo" | "world"
+    backend: str = "auto"  # "auto" | "vevo" | "vevo2" | "world"
 
 
 class CompareRequest(BaseModel):

@@ -22,6 +22,13 @@ json5>=0.9               # Amphion utils/util.py
 ruamel.yaml>=0.17        # Amphion utils/util.py
 six>=1.16                # Amphion utils/hparam.py
 
+# Vevo2 backend — additional deps on top of the v1 set above
+# (flash-attn is optional; vevo2_utils.py falls back if it's absent)
+torchvision>=0.15        # imported by Amphion/models/svc/vevo2/vevo2_utils.py
+openai-whisper>=20231117 # whisper import in vevo2_utils.py
+torchcrepe>=0.0.22       # from Amphion/models/svc/vevo2/requirements.txt
+psutil>=5.9              # smoke-test memory observability
+
 # CLI and utilities
 click>=8.1
 rich>=13.0
