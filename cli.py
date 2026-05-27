@@ -138,6 +138,10 @@ def _build_config(args) -> TransformConfig:
     for s in (args.strength or []):
         k, v = s.split("=")
         strengths[k] = float(v)
+    # On Vevo 2, energy transfer adds ~1.6 pp shimmer for marginal gain. Auto-
+    # disable unless the user explicitly set its strength on the CLI.
+    if getattr(args, "backend", None) == "vevo2" and "energy" not in strengths:
+        disabled.add("energy")
     params = {}
     for p in PARAMS:
         params[p] = ParamConfig(

@@ -103,6 +103,19 @@ export default function TransformView({ prefill, onPrefillConsumed, onTransformD
     onPrefillConsumed?.();
   }, [prefill, onPrefillConsumed]);
 
+  // On Vevo 2, energy transfer adds ~1.6 pp of shimmer (its time-varying gain
+  // envelope reads as amplitude perturbation between glottal cycles) for marginal
+  // benefit — the FM model's natural amplitude is already close enough that
+  // target-loudness matching isn't audibly useful. Auto-disable on backend switch;
+  // the user can opt back in by flipping the slider.
+  useEffect(() => {
+    if (backend === "vevo2") {
+      setConfig(c => c.energy.enabled
+        ? { ...c, energy: { ...c.energy, enabled: false } }
+        : c);
+    }
+  }, [backend]);
+
   useEffect(() => {
     if (!running) return;
     setElapsed(0);

@@ -34,6 +34,7 @@ const BACKEND_RULES: Partial<Record<Backend, Partial<Record<ParamKey, ParamRule>
       desc: "Blend converted output with raw source (100% = full conversion)",
       coupledWith: "formants",
     },
+    energy: { desc: "Off by default on Vevo 2 — the FM model's amplitude is already clean, and energy transfer adds shimmer for marginal gain" },
     formants: { mode: "hidden" },
     rhythm: { mode: "hidden" },
     breathiness: { mode: "hidden" },
