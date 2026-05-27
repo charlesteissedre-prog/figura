@@ -114,6 +114,19 @@ Amphion/                       # Cloned manually — see Install (gitignored)
 
 No test suite. WORLD backend is functional. Vevo (v1) and Vevo 2 are functional on CPU and on CUDA where enough VRAM is available; `backend=auto` falls back to WORLD if Amphion or checkpoints are missing.
 
+## Acknowledgments
+
+This project was developed as part of a collaboration with the
+[VoCS — Voice Communication Sciences](https://www.vocs.eu.com/) Doctoral
+Network, during a secondment by Diego Belfiore (PhD candidate, VoCS).
+
+VoCS is funded by the European Union under the Marie Skłodowska-Curie
+Actions (Horizon Europe, grant agreement no. 101168998). Views and
+opinions expressed are those of the authors only and do not necessarily
+reflect those of the European Union or the European Research Executive
+Agency. Neither the European Union nor the granting authority can be
+held responsible for them.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
