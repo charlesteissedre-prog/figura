@@ -120,6 +120,15 @@ function App() {
         )}
         {tab === "pipeline" && <PipelineView />}
       </main>
+      <footer className="app-footer">
+        Developed in collaboration with the{" "}
+        <a href="https://www.vocs.eu.com/" target="_blank" rel="noreferrer">
+          VoCS Doctoral Network
+        </a>{" "}
+        during a secondment by Diego Belfiore (PhD candidate). Funded by
+        the European Union under the Marie Skłodowska-Curie Actions
+        (grant 101168998).
+      </footer>
     </div>
   );
 }

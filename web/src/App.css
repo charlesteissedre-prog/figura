@@ -38,6 +38,25 @@ body {
 /* ---------- App layout ---------- */
 .app { max-width: 1200px; margin: 0 auto; padding: 20px 24px; }
 
+.app-footer {
+  margin-top: 48px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.app-footer a {
+  color: var(--text-secondary);
+  text-decoration: underline;
+}
+
+.app-footer a:hover {
+  color: var(--text);
+}
+
 .app-header {
   display: flex;
   align-items: center;
