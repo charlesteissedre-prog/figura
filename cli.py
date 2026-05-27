@@ -75,7 +75,7 @@ def cmd_transform(args):
     print(f"\nOutput saved to {result_path}")
 
     if args.compare:
-        _run_compare(source, result_path, target, config)
+        _run_compare(source, result_path, target, config, backend=args.backend)
 
     if args.save_config:
         Path(args.save_config).parent.mkdir(parents=True, exist_ok=True)
@@ -88,10 +88,11 @@ def cmd_transform(args):
 
 
 def cmd_compare(args):
-    _run_compare(args.source, args.output, args.target, config=None)
+    _run_compare(args.source, args.output, args.target, config=None,
+                 backend=getattr(args, "backend", None))
 
 
-def _run_compare(source_path, output_path, target_path, config=None):
+def _run_compare(source_path, output_path, target_path, config=None, backend=None):
     print("\nExtracting profiles for comparison...")
     src = extract(source_path, "source")
     out = extract(output_path, "output")
@@ -100,7 +101,7 @@ def _run_compare(source_path, output_path, target_path, config=None):
     if config is None:
         config = TransformConfig()
 
-    result = compare(src, out, tgt, config)
+    result = compare(src, out, tgt, config, backend=backend)
 
     print(f"\n--- Comparison ---")
     print(f"Overall similarity to target: {result.overall_score_pct:.0f}%")
@@ -192,6 +193,8 @@ def main():
     p_compare.add_argument("--source", required=True)
     p_compare.add_argument("--output", required=True)
     p_compare.add_argument("--target", required=True)
+    p_compare.add_argument("--backend", choices=["auto", "vevo", "vevo2", "world"], default=None,
+                           help="Backend used to produce --output (enables coupling-aware leakage detection)")
 
     args = parser.parse_args()
     if args.cmd == "analyze":      cmd_analyze(args)

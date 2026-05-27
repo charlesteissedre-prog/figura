@@ -40,6 +40,24 @@ FIELD_TO_PARAM = {
 
 LEAK_THRESHOLD = 0.10  # 10% relative change on a disabled param = flagged as leak
 
+# Per-field minimum absolute change before the relative threshold fires.
+# Prevents tiny absolute movements on small-valued metrics (e.g. jitter going
+# from 3.18% to 2.19% = a 31% relative change but barely audible) from
+# producing noisy "leakage" warnings.
+FIELD_MIN_ABS_DELTA = {
+    "jitter_pct": 1.0,     # absolute percentage points
+    "shimmer_pct": 2.0,
+}
+
+# Per-backend param couplings: a param that's "disabled" in the config is
+# still effectively enabled if the backend transfers it as a side-effect of
+# another enabled param. On Vevo 2 the FM model bundles timbre + formants —
+# turning timbre on inevitably moves formants too, so changes there aren't
+# leakage, they're an intended consequence of timbre transfer.
+BACKEND_COUPLINGS = {
+    "vevo2": {"formants": "timbre"},
+}
+
 
 @dataclass
 class FieldDelta:
@@ -77,11 +95,12 @@ def compare(
     out: VoiceProfile,
     tgt: VoiceProfile,
     config: TransformConfig,
+    backend: Optional[str] = None,
 ) -> ComparisonResult:
     result = ComparisonResult(overall_score_pct=0.0)
 
-    _compute_acoustic_deltas(src, out, tgt, config, result)
-    _compute_dim_deltas(src, out, tgt, config, result)
+    _compute_acoustic_deltas(src, out, tgt, config, backend, result)
+    _compute_dim_deltas(src, out, tgt, config, backend, result)
     _compute_tag_diff(src, out, tgt, result)
     _compute_param_scores(result, config)
     _compute_overall_score(result)
@@ -90,20 +109,38 @@ def compare(
     return result
 
 
-def _delta_status(field_name, delta_src_out, src_val, tgt_val, config) -> str:
-    param_name = FIELD_TO_PARAM.get(field_name)
+def _is_param_effectively_enabled(param_name, config, backend) -> bool:
+    """A param is effectively enabled if it's enabled directly OR if it's
+    coupled to an enabled param under the active backend."""
     param = getattr(config, param_name, None) if param_name else None
-    enabled = param.enabled if param else True
+    if param is None:
+        return True
+    if param.enabled:
+        return True
+    if backend:
+        coupled_to = BACKEND_COUPLINGS.get(backend, {}).get(param_name)
+        if coupled_to:
+            coupled = getattr(config, coupled_to, None)
+            if coupled and coupled.enabled:
+                return True
+    return False
+
+
+def _delta_status(field_name, delta_src_out, src_val, tgt_val, config, backend) -> str:
+    param_name = FIELD_TO_PARAM.get(field_name)
+    enabled = _is_param_effectively_enabled(param_name, config, backend)
 
     if delta_src_out is None or src_val is None:
         return "unchanged"
 
     rel_change = abs(delta_src_out) / (abs(src_val) + 1e-6)
+    min_abs = FIELD_MIN_ABS_DELTA.get(field_name, 0.0)
+    significant = rel_change > LEAK_THRESHOLD and abs(delta_src_out) >= min_abs
 
     if not enabled:
-        return "leaked" if rel_change > LEAK_THRESHOLD else "unchanged"
+        return "leaked" if significant else "unchanged"
 
-    # Param was enabled: did output move toward target?
+    # Param was enabled (possibly via coupling): did output move toward target?
     if tgt_val is not None and src_val is not None:
         src_dist = abs(tgt_val - src_val)
         out_dist = abs(tgt_val - (src_val + delta_src_out))
@@ -112,27 +149,27 @@ def _delta_status(field_name, delta_src_out, src_val, tgt_val, config) -> str:
     return "unchanged"
 
 
-def _compute_acoustic_deltas(src, out, tgt, config, result):
+def _compute_acoustic_deltas(src, out, tgt, config, backend, result):
     for f in ACOUSTIC_FIELDS:
         sv = getattr(src, f, None)
         ov = getattr(out, f, None)
         tv = getattr(tgt, f, None)
         d1 = round(ov - sv, 2) if ov is not None and sv is not None else None
         d2 = round(ov - tv, 2) if ov is not None and tv is not None else None
-        status = _delta_status(f, d1, sv, tv, config)
+        status = _delta_status(f, d1, sv, tv, config, backend)
         result.acoustic_deltas.append(FieldDelta(
             field=f, src_val=sv, out_val=ov, tgt_val=tv,
             delta_src_out=d1, delta_out_tgt=d2, status=status))
 
 
-def _compute_dim_deltas(src, out, tgt, config, result):
+def _compute_dim_deltas(src, out, tgt, config, backend, result):
     for f in DIM_FIELDS:
         sv = getattr(src, f, None)
         ov = getattr(out, f, None)
         tv = getattr(tgt, f, None)
         d1 = round(ov - sv, 1) if ov is not None and sv is not None else None
         d2 = round(ov - tv, 1) if ov is not None and tv is not None else None
-        status = _delta_status(f, d1, sv, tv, config)
+        status = _delta_status(f, d1, sv, tv, config, backend)
         result.dim_deltas.append(FieldDelta(
             field=f, src_val=sv, out_val=ov, tgt_val=tv,
             delta_src_out=d1, delta_out_tgt=d2, status=status))

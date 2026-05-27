@@ -83,6 +83,7 @@ class CompareRequest(BaseModel):
     output_id: str
     target_id: str
     config: TransformConfigSchema = TransformConfigSchema()
+    backend: Optional[str] = None  # for backend-aware leakage detection (e.g. coupling on vevo2)
 
 
 class ExportRequest(BaseModel):

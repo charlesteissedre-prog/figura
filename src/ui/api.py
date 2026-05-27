@@ -242,7 +242,7 @@ def transform(req: TransformRequest):
     src_vp = extract(str(src_path), "source")
     tgt_vp = extract(str(tgt_path), "target")
     out_vp = extract(str(out_path), "output")
-    comparison = run_compare(src_vp, out_vp, tgt_vp, config)
+    comparison = run_compare(src_vp, out_vp, tgt_vp, config, backend=req.backend)
 
     return {
         "output_id": out_id,
@@ -265,7 +265,8 @@ def compare(req: CompareRequest):
     out_vp = extract(str(out_path), "output")
     tgt_vp = extract(str(tgt_path), "target")
 
-    result = run_compare(src_vp, out_vp, tgt_vp, config)
+    backend = req.backend or (_files.get(req.output_id) or {}).get("provenance", {}).get("backend")
+    result = run_compare(src_vp, out_vp, tgt_vp, config, backend=backend)
 
     return ComparisonResultSchema(**dataclasses.asdict(result)).model_dump()
 
@@ -281,14 +282,14 @@ def export_zip(req: ExportRequest):
     src_vp = extract(str(src_path), "source")
     out_vp = extract(str(out_path), "output")
     tgt_vp = extract(str(tgt_path), "target")
-    result = run_compare(src_vp, out_vp, tgt_vp, config)
+    backend = req.backend or (_files.get(req.output_id) or {}).get("provenance", {}).get("backend", "")
+    result = run_compare(src_vp, out_vp, tgt_vp, config, backend=backend or None)
 
     from datetime import datetime, timezone
     created_at = (
         (_files.get(req.output_id) or {}).get("provenance", {}).get("created_at")
         or datetime.now(timezone.utc).isoformat(timespec="seconds")
     )
-    backend = req.backend or (_files.get(req.output_id) or {}).get("provenance", {}).get("backend", "")
 
     zip_bytes = build_export_zip(
         src_path=str(src_path),
