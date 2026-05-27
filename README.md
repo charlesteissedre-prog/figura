@@ -7,9 +7,12 @@ Analyzes speaker voice characteristics and selectively transforms one voice to m
 **extract → transform → compare**
 
 1. **Extract** a `VoiceProfile` (F0, formants, HNR, jitter, shimmer, CPP, brightness, breathiness, nasality) from audio using Praat's autocorrelation with a Hirst two-pass anti-halving step.
-2. **Transform** the source toward the target. Two backends:
+2. **Transform** the source toward the target. Three backends:
    - **WORLD** — pyworld spectral-envelope swap. Pure CPU, fast. Pitch shift on F0, formant/timbre transfer via spectral-envelope warping, breathiness via AP blend.
-   - **Vevo timbre** — Amphion neural VC via `inference_fm`. Timbre-only (the heavier style/full paths needing the Vq32 + AR model are not supported). Checkpoints auto-download via HuggingFace on first use.
+   - **Vevo (v1, timbre)** — Amphion neural VC via `inference_fm`. Timbre-only (the heavier style/full paths needing the Vq32 + AR model are not supported). Checkpoints auto-download via HuggingFace on first use.
+   - **Vevo 2 (FM-only)** — Amphion's flow-matching VC. Cleaner timbre transfer than v1 but heavier (FM model ~363 M params + content-style tokenizer + vocoder ≈ 4 GB RAM peak). `pitch.enabled` toggles its native `use_pitch_shift` (target-pitch range vs source-pitch range).
+
+   Both Vevo backends share a uniform Praat-PSOLA pitch correction applied as a thin post-step (`pitch.strength` interpolates how much of the model's pitch to keep, 1 = full model, 0 = land on source's mean). Auto-skips when measured drift is below ~0.3 semitones to avoid resynthesis cost.
 3. **Compare** source, output, and target three-ways. Reports per-metric deltas, 0–100% similarity scores, and flags "leakage" when a disabled parameter still shifts by more than 10%.
 
 ## Install
@@ -32,7 +35,7 @@ cp .env.example .env
 cd web && npm install && cd ..
 ```
 
-The first time the Vevo backend runs, ~2 GB of checkpoints will download into `ckpts/Vevo/` automatically. The WORLD backend has no extra downloads.
+The first time a Vevo backend runs, checkpoints auto-download from HuggingFace: ~2 GB into `ckpts/Vevo/` for v1, additional weights into `ckpts/Vevo2/` for v2 (flow-matching model + content-style tokenizer + vocoder). The WORLD backend has no extra downloads.
 
 ## Run the app
 
@@ -88,7 +91,7 @@ LICENSE                        # MIT
 src/
   analysis/extractor.py        # VoiceProfile extraction (Praat two-pass)
   analysis/visualization.py    # F0 contour + mel-spectrogram helpers
-  transform/pipeline.py        # WORLD + Vevo timbre, ParamConfig/TransformConfig
+  transform/pipeline.py        # WORLD + Vevo (v1) + Vevo 2 backends, ParamConfig/TransformConfig
   comparison/engine.py         # Three-way deltas, similarity, leakage warnings
   ui/                          # FastAPI web backend
 docs/                          # Pipeline doc + spec
@@ -109,7 +112,7 @@ Amphion/                       # Cloned manually — see Install (gitignored)
 
 ## Status
 
-No test suite. WORLD backend is functional. Vevo timbre backend is functional where CUDA + enough VRAM are available; falls back to WORLD under `backend=auto`. A PitchVC neural backend is planned next.
+No test suite. WORLD backend is functional. Vevo (v1) and Vevo 2 are functional on CPU and on CUDA where enough VRAM is available; `backend=auto` falls back to WORLD if Amphion or checkpoints are missing.
 
 ## License
 

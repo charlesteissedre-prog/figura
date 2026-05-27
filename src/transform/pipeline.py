@@ -249,14 +249,10 @@ def _run_vevo(source_path, target_path, config: TransformConfig, output_path):
     audio_out = gen_audio.cpu().numpy().squeeze().astype(np.float32)
     vevo_sr = 24000
 
-    # --- Pitch correction via Praat PSOLA ---
-    # inference_fm transfers both timbre AND pitch. PSOLA shifts pitch
-    # pulses in the time domain — formants stay exactly where Vevo put
-    # them, no spectral re-synthesis, no double-vocoding.
-    pitch_blend = config.pitch.strength if config.pitch.enabled else 0.0
-    if pitch_blend < 1.0:
-        audio_out = _psola_pitch_transplant(
-            audio_out, source_path, vevo_sr, pitch_blend=pitch_blend,
+    correction_strength = (1.0 - config.pitch.strength) if config.pitch.enabled else 1.0
+    if correction_strength > 0:
+        audio_out = _uniform_pitch_correction(
+            audio_out, source_path, vevo_sr, strength=correction_strength,
         )
 
     # Strength blend: mix output toward source by (1 - strength) of whichever
@@ -380,9 +376,11 @@ def _run_vevo2(source_path, target_path, config: TransformConfig, output_path):
 
     Slider mapping: `pitch.enabled` toggles Vevo2's native `use_pitch_shift`
     (on = shift source into target's pitch range, off = keep source's range).
-    Strength is ignored — v2's pitch control is binary, not continuous.
-    `breathiness` slider is a no-op (would require re-introducing the WORLD
-    round-trip, which is what made the output artefact-y in the first place)."""
+    `pitch.strength` controls a uniform PSOLA correction toward source's mean
+    F0 — same helper as Vevo 1, since Vevo 2's residual drift is also register-
+    only when `use_pitch_shift=False`. `breathiness` slider is a no-op (would
+    require re-introducing the WORLD round-trip, which is what made the
+    output artefact-y in the first place)."""
     import soundfile as sf
     import torch
 
@@ -403,6 +401,12 @@ def _run_vevo2(source_path, target_path, config: TransformConfig, output_path):
     audio_out = gen_audio.cpu().numpy().squeeze().astype(np.float32)
     vevo_sr = 24000
 
+    correction_strength = (1.0 - config.pitch.strength) if config.pitch.enabled else 1.0
+    if correction_strength > 0:
+        audio_out = _uniform_pitch_correction(
+            audio_out, source_path, vevo_sr, strength=correction_strength,
+        )
+
     blend = max(
         config.timbre.strength if config.timbre.enabled else 0,
         config.formants.strength if config.formants.enabled else 0,
@@ -420,86 +424,82 @@ def _run_vevo2(source_path, target_path, config: TransformConfig, output_path):
     return output_path
 
 
-def _psola_pitch_transplant(
-    vevo_audio: np.ndarray,
+def _uniform_pitch_correction(
+    audio_out: np.ndarray,
     source_path: str,
     sr: int,
-    pitch_blend: float = 0.0,
+    *,
+    strength: float = 1.0,
+    gate_st: float = 0.3,
 ) -> np.ndarray:
-    """Replace the Vevo output's pitch contour with the source's via Praat
-    PSOLA (overlap-add resynthesis in the time domain).
+    """Uniform Praat PSOLA shift toward source's mean F0.
 
-    Unlike spectral methods (WORLD, mel-domain shift), PSOLA moves pitch
-    pulses without touching the spectral envelope at all — formants stay
-    exactly where Vevo placed them. No double-vocoding, no re-synthesis
-    artefacts.
-
-    pitch_blend=0 → full source pitch (default, pure timbre transfer).
-    pitch_blend=1 → keep Vevo pitch (caller should skip this function).
+    Single multiplicative ratio applied to every pitch pulse — the regime
+    PSOLA is cleanest in. Auto-skips when measured drift is below `gate_st`
+    semitones (perceptually invisible; resynthesis would cost LTAS without
+    audible gain). `strength` interpolates the correction in log2 space:
+    1 = full shift to source mean, 0 = no shift.
     """
+    if strength <= 0.0:
+        return audio_out
+
     import parselmouth
-    from src.analysis.visualization import extract_f0_praat
+    import pyworld as pw
 
-    # Build Praat Sound from the Vevo numpy output
-    vevo_snd = parselmouth.Sound(vevo_audio.astype(np.float64), sampling_frequency=sr)
+    def mean_voiced_f0(a, fs):
+        _f0, t = pw.harvest(a.astype(np.float64), fs=fs, frame_period=32 / 3)
+        f0 = pw.stonemask(a.astype(np.float64), _f0, t, fs=fs)
+        voiced = f0[f0 > 0]
+        return float(voiced.mean()) if len(voiced) else 0.0
 
-    # Extract source F0 contour via the shared two-pass Hirst method
-    src_f0, src_times = extract_f0_praat(source_path)
+    src_audio, src_sr = _load_audio(source_path)
+    src_mean = mean_voiced_f0(src_audio, src_sr)
+    out_mean = mean_voiced_f0(audio_out, sr)
+    if src_mean <= 0 or out_mean <= 0:
+        return audio_out
 
-    # Create a Manipulation object from the Vevo audio
-    manipulation = parselmouth.praat.call(
-        vevo_snd, "To Manipulation", 0.01, 60, 600,
-    )
+    full_ratio = src_mean / out_mean
+    if abs(np.log2(full_ratio) * 12) < gate_st:
+        return audio_out
 
-    # Build a new PitchTier from the source F0 contour
-    pitch_tier = parselmouth.praat.call(
-        manipulation, "Extract pitch tier",
-    )
-    # Clear the existing (Vevo/target) pitch points
-    parselmouth.praat.call(pitch_tier, "Remove points between", 0.0, vevo_snd.duration)
-
-    # Add source pitch points (skip unvoiced frames)
-    for i, t in enumerate(src_times):
-        f0 = src_f0[i]
-        if not np.isfinite(f0) or f0 <= 0:
-            continue
-        if t > vevo_snd.duration:
-            break
-        if pitch_blend > 0:
-            # Retrieve the Vevo pitch at this time to blend
-            vevo_f0 = parselmouth.praat.call(
-                vevo_snd.to_pitch_cc(time_step=0.01, pitch_floor=60, pitch_ceiling=600),
-                "Get value at time", t, "Hertz", "Linear",
-            )
-            if vevo_f0 and vevo_f0 > 0:
-                f0 = np.exp(
-                    (1 - pitch_blend) * np.log(f0) + pitch_blend * np.log(vevo_f0)
-                )
-        parselmouth.praat.call(pitch_tier, "Add point", float(t), float(f0))
-
-    # Replace and resynthesize
+    ratio = float(full_ratio ** strength)
+    snd = parselmouth.Sound(audio_out.astype(np.float64), sampling_frequency=sr)
+    manipulation = parselmouth.praat.call(snd, "To Manipulation", 0.01, 60, 600)
+    pitch_tier = parselmouth.praat.call(manipulation, "Extract pitch tier")
+    parselmouth.praat.call(pitch_tier, "Multiply frequencies",
+                           0.0, snd.duration, ratio)
     parselmouth.praat.call([manipulation, pitch_tier], "Replace pitch tier")
-    result_snd = parselmouth.praat.call(manipulation, "Get resynthesis (overlap-add)")
-    return np.array(result_snd.values[0]).astype(np.float32)
+    resynth = parselmouth.praat.call(manipulation, "Get resynthesis (overlap-add)")
+    out = np.array(resynth.values[0]).astype(np.float32)
+    if len(out) > len(audio_out):
+        out = out[: len(audio_out)]
+    elif len(out) < len(audio_out):
+        out = np.pad(out, (0, len(audio_out) - len(out)))
+    return out
 
 
 def _transfer_energy(audio_out, source_path, target_path, strength, sr):
-    """Transfer RMS energy envelope from target, blended by strength."""
-    hop = int(0.010 * sr)
-    frame = int(0.025 * sr)
+    """Transfer RMS energy envelope from target, blended by strength.
 
-    def rms_env(x):
+    Window/hop are 25 ms / 10 ms in REAL time, so each audio's RMS envelope
+    is computed at its native sample rate. The three envelopes are then
+    resampled to the output frame count for the gain blend — comparing RMS
+    values measured over the same physical duration regardless of source
+    audio's sample rate."""
+    def rms_env(x, x_sr):
+        f = int(0.025 * x_sr)
+        h = int(0.010 * x_sr)
         return np.array([
-            np.sqrt(np.mean(x[i:i+frame]**2) + 1e-10)
-            for i in range(0, max(1, len(x) - frame), hop)
+            np.sqrt(np.mean(x[i:i+f]**2) + 1e-10)
+            for i in range(0, max(1, len(x) - f), h)
         ])
 
-    src_audio, _ = _load_audio(source_path)
-    tgt_audio, _ = _load_audio(target_path)
+    src_audio, src_sr = _load_audio(source_path)
+    tgt_audio, tgt_sr = _load_audio(target_path)
 
-    src_rms = rms_env(src_audio)
-    tgt_rms = rms_env(tgt_audio)
-    out_rms = rms_env(audio_out)
+    src_rms = rms_env(src_audio, src_sr)
+    tgt_rms = rms_env(tgt_audio, tgt_sr)
+    out_rms = rms_env(audio_out, sr)
 
     n = len(out_rms)
     src_rms = _resample_1d(src_rms, n)
@@ -507,7 +507,8 @@ def _transfer_energy(audio_out, source_path, target_path, strength, sr):
 
     desired = src_rms + strength * (tgt_rms - src_rms)
     gain = desired / (out_rms + 1e-10)
-    gain_samples = np.repeat(gain, hop)[:len(audio_out)]
+    out_hop = int(0.010 * sr)
+    gain_samples = np.repeat(gain, out_hop)[:len(audio_out)]
     if len(gain_samples) < len(audio_out):
         gain_samples = np.pad(gain_samples, (0, len(audio_out) - len(gain_samples)),
                               constant_values=gain_samples[-1])

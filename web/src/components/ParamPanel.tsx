@@ -28,15 +28,15 @@ interface ParamRule {
 
 const BACKEND_RULES: Partial<Record<Backend, Partial<Record<ParamKey, ParamRule>>>> = {
   vevo2: {
-    pitch: { mode: "binary", desc: "Shift source into target's pitch range (on/off)" },
+    pitch: { desc: "On = shift toward target's pitch range. Off = preserve source pitch. Strength = how much of model's pitch to keep" },
     timbre: {
       label: "Voice transfer",
       desc: "Blend converted output with raw source (100% = full conversion)",
       coupledWith: "formants",
     },
     formants: { mode: "hidden" },
-    rhythm: { mode: "disabled", desc: "Not supported on Vevo 2" },
-    breathiness: { mode: "disabled", desc: "Not supported on Vevo 2" },
+    rhythm: { mode: "hidden" },
+    breathiness: { mode: "hidden" },
   },
 };
 
